@@ -1,0 +1,42 @@
+# Format used when Anytype dates are written into frontmatter.
+# Supported tokens: YYYY, YY, MM, DD, HH, mm, ss
+date_format: "YYYY-MM-DD"
+
+# Folder name inside the output vault where copied files are stored.
+attachments_folder: "attachments"
+
+# How attachment paths are rendered in markdown and frontmatter.
+# "relative" = attachments/file.jpg
+# "filename only" = file.jpg
+attachment_link_style: "filename only"
+
+# Exact Anytype object type names to skip entirely.
+exclude_types:
+  - "Bookmark"
+
+# Optional: map Anytype collection membership into frontmatter.
+# $v = collection name
+# "[[$v]]" or '[[$v]]' = Obsidian wikilink
+collections:
+  - in: "[[$v]]"
+
+# Optional: map the note's cover image into frontmatter.
+# $v = copied attachment path, affected by attachment_link_style
+# "[[$v]]" or '[[$v]]' = Obsidian wikilink
+cover_image:
+  - cover: "[[$v]]"
+
+# Map exact Anytype property names to Obsidian frontmatter keys.
+# $v = resolved property value
+# "[[$v]]" or '[[$v]]' = Obsidian wikilink
+properties:
+  Object type:
+    - in: "[[$v]]"
+  Journal Type:
+    - in: "[[$v]]"
+  Author:
+    - author: "[[$v]]"
+  Date:
+    - date: $v
+  Creation date:
+    - date: $v
