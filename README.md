@@ -1,6 +1,22 @@
 # anyMD
 
-Small Anytype Anyblock export to Obsidian markdown converter.
+Anytype Any-Block v1 export to Obsidian markdown converter. anyMD makes decisions on how to translate Anytype blocks to wikilink style markdown, i.e. a Bookmark block will be rendered as a web hyperlink, an image will be rendered as ![[image.jpg]], note links are rendered as [[wikilinks]], etc.
+
+
+## Usage
+
+Export an Anytype space/page/collection as Any-Block v1 in JSON format.
+
+`cd` into the root of the exported folder.
+
+Run:
+
+```bash
+git clone https://github.com/kamryn404/anyMD
+python3 anyMD/convert.py
+```
+
+Output is written to `anyMD/output/` by default.
 
 ## What it does
 
@@ -11,7 +27,7 @@ Small Anytype Anyblock export to Obsidian markdown converter.
   - `types/`
   - `files/`
   - `filesObjects/`
-- Converts Anytype page objects into markdown files.
+- Converts Anytype page objects (Any-Block v1) into markdown files.
 - Builds YAML frontmatter from `config.yaml`.
 - Copies embedded attachments into the configured Obsidian attachments folder.
 - Sets each generated markdown file's creation date and modified date from Anytype's system dates.
@@ -199,19 +215,3 @@ Journal Type:
 ```
 
 Quotes are optional for keys like this.
-
-## Usage
-
-Convert everything:
-
-```bash
-python3 anyMD/convert.py
-```
-
-Convert only notes whose title contains a string:
-
-```bash
-python3 anyMD/convert.py --match "Introspection is bad"
-```
-
-Output is written to `anyMD/output/` by default.
