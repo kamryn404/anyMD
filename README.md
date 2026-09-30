@@ -53,11 +53,14 @@ attachments_folder: "attachments"
 attachment_link_style: "relative"
 exclude_types:
   - "Bookmark"
+# notes in collection "Books" would receive frontmatter "in: [[Books]]"
 collections:
-  - in: "[[$v]]"
+  - in: "[[$v]]" 
+# notes with Anytype cover_image "image.jpg" would recieve frontmatter "cover: [[image.jpg]]" 
 cover_image:
-  - cover: "[[$v]]"
+  - cover: "[[$v]]" 
 properties:
+  # notes with type "Journal Entry" would receive frontmatter "in: [[Journal Entry]]"
   Object type:
     - in: "[[$v]]"
   Date:
