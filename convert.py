@@ -3,10 +3,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import logging
+import math
 import os
 import re
 import shutil
 import subprocess
+import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -56,6 +59,8 @@ class FileInfo:
 
 
 class StyledString(str):
+    quote_style: str | None
+
     def __new__(cls, value: str, quote_style: str | None = None) -> StyledString:
         instance = super().__new__(cls, value)
         instance.quote_style = quote_style
@@ -308,7 +313,7 @@ class Converter:
 
     def _should_exclude(self, details: dict[str, Any]) -> bool:
         type_id = details.get("type")
-        type_name = self.index.type_name_by_id.get(type_id, "")
+        type_name = self.index.type_name_by_id.get(type_id, "") if isinstance(type_id, str) else ""
         return type_name in self.exclude_types
 
     def _note_output_path(self, details: dict[str, Any]) -> Path:
@@ -393,29 +398,43 @@ class Converter:
     def _apply_file_timestamps(self, details: dict[str, Any], output_path: Path) -> None:
         created_timestamp = self._coerce_timestamp(details.get("createdDate"))
         modified_timestamp = self._coerce_timestamp(details.get("lastModifiedDate"))
-        effective_timestamp = modified_timestamp or created_timestamp
+        effective_timestamp = modified_timestamp if modified_timestamp is not None else created_timestamp
 
+        if created_timestamp is not None and sys.platform == "darwin":
+            self._set_macos_creation_date(output_path, created_timestamp)
+
+        # SetFile can change mtime too, so restore it after updating creation time.
         if effective_timestamp is not None:
-            os.utime(output_path, (effective_timestamp, effective_timestamp))
-
-        if created_timestamp is not None:
-            self._set_macos_file_date(output_path, created_timestamp, flag="-d")
-        if modified_timestamp is not None:
-            self._set_macos_file_date(output_path, modified_timestamp, flag="-m")
+            try:
+                os.utime(output_path, (effective_timestamp, effective_timestamp))
+            except (OSError, OverflowError, ValueError) as error:
+                logging.warning("Could not preserve modification date for %s: %s", output_path, error)
 
     def _coerce_timestamp(self, value: Any) -> float | None:
-        if isinstance(value, (int, float)):
-            return float(value)
-        return None
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return None
+        try:
+            timestamp = float(value)
+        except OverflowError:
+            return None
+        return timestamp if math.isfinite(timestamp) else None
 
-    def _set_macos_file_date(self, output_path: Path, timestamp: float, flag: str) -> None:
-        formatted = datetime.fromtimestamp(timestamp).strftime("%m/%d/%Y %H:%M:%S")
-        subprocess.run(
-            ["/usr/bin/SetFile", flag, formatted, str(output_path)],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
+    def _set_macos_creation_date(self, output_path: Path, timestamp: float) -> None:
+        setfile = shutil.which("SetFile")
+        if setfile is None:
+            logging.warning("SetFile is unavailable; original creation date for %s will not be preserved.", output_path)
+            return
+        try:
+            formatted = datetime.fromtimestamp(timestamp).strftime("%m/%d/%Y %H:%M:%S")
+            subprocess.run(
+                [setfile, "-d", formatted, str(output_path)],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+        except (OSError, subprocess.SubprocessError, OverflowError, ValueError) as error:
+            logging.warning("Could not preserve creation date for %s: %s", output_path, error)
 
     def _resolve_source_value(
         self,
@@ -668,7 +687,11 @@ class Converter:
         if not blocks:
             return []
 
-        block_by_id = {block.get("id"): block for block in blocks if block.get("id")}
+        block_by_id = {
+            block_id: block
+            for block in blocks
+            if isinstance(block_id := block.get("id"), str) and block_id
+        }
         root = blocks[0]
         lines: list[str] = []
         for child_id in root.get("childrenIds", []):
@@ -778,7 +801,8 @@ class Converter:
         line = self._render_link_target(target_id)
         if line:
             if indent_level > 0:
-                return [f"{'\t' * indent_level}- {line}"]
+                indent = "\t" * indent_level
+                return [f"{indent}- {line}"]
             return [line, ""]
         return []
 
@@ -827,7 +851,7 @@ class Converter:
         mention_mark = next((mark for mark in marks if mark.get("type") in {"Mention", "Object"}), None)
         if mention_mark:
             target_id = mention_mark.get("param")
-            target_name = self.index.object_name_by_id.get(target_id)
+            target_name = self.index.object_name_by_id.get(target_id) if isinstance(target_id, str) else None
             display_name = segment.strip()
             bookmark_url = self.index.bookmark_url_by_object_id.get(str(target_id or ""))
             if bookmark_url:

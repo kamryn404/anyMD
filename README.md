@@ -14,7 +14,8 @@ Small Anytype Anyblock export to Obsidian markdown converter.
 - Converts Anytype page objects into markdown files.
 - Builds YAML frontmatter from `config.yaml`.
 - Copies embedded attachments into the configured Obsidian attachments folder.
-- Sets each generated markdown file's creation date and modified date from Anytype's system dates.
+- Preserves each generated markdown file's modified date from Anytype's system dates on Windows, macOS, and Linux.
+- Also preserves creation dates on macOS when the optional `SetFile` tool is available.
 - Converts links to Anytype bookmark objects into normal markdown web links.
 
 ## Config format
@@ -59,7 +60,7 @@ properties:
 - For normal properties, `"[[$v]]"` or `'[[$v]]'` produces an Obsidian wikilink list, even for a single value.
 - If the Anytype property resolves to multiple values, the Obsidian property becomes a YAML list.
 - `Creation date` and `Last modified date` are not added to frontmatter unless you explicitly map them here.
-- The generated markdown file itself still gets its filesystem creation date and modified date from Anytype by default.
+- The generated markdown file gets its filesystem modified date from Anytype by default. Creation dates are also preserved on macOS when `SetFile` is available; Windows and Linux retain their normal filesystem creation dates.
 - `exclude_types` skips generating markdown files for Anytype objects whose type name matches exactly.
 - `collections` maps each note's containing Anytype collection names into frontmatter.
 - Scalar frontmatter values keep the quote style from your template when possible.
@@ -200,9 +201,32 @@ Journal Type:
 
 Quotes are optional for keys like this.
 
+## Setup
+
+Use Python 3.10 or newer. From the `anyMD` folder, install the Python dependencies:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+Use `python3` on macOS/Linux if needed, or `py` on Windows. Use the same Python command to install dependencies and run the converter. PyYAML is the only third-party Python dependency.
+
+### File dates
+
+- **All platforms:** The note's modified date is taken from Anytype's `Last modified date`, falling back to `Creation date` if absent.
+- **macOS:** Creation dates are also preserved if `SetFile` is available on `PATH` (typically supplied by Apple's developer tools). It is optional.
+- **Windows and Linux:** Creation dates are not restored. No macOS tools are required or invoked.
+- If an optional tool is missing or a filesystem rejects a timestamp update, conversion continues with a warning. The generated note is kept.
+
 ## Usage
 
-Convert everything:
+From inside the `anyMD` folder:
+
+```bash
+python convert.py
+```
+
+Or, from the parent export folder, convert everything:
 
 ```bash
 python3 anyMD/convert.py
@@ -215,3 +239,13 @@ python3 anyMD/convert.py --match "Introspection is bad"
 ```
 
 Output is written to `anyMD/output/` by default.
+
+## Tests
+
+From the `anyMD` folder:
+
+```bash
+python -m unittest discover -v
+```
+
+Timestamp regression tests use temporary exports and simulate platform/tool failures; they do not modify your exported notes.
