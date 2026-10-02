@@ -1,6 +1,22 @@
 # anyMD
 
-Small Anytype Anyblock export to Obsidian markdown converter.
+Anytype Any-Block v1 export to Obsidian markdown converter. anyMD makes decisions on how to translate Anytype blocks to wikilink style markdown, i.e. a Bookmark block will be rendered as a web hyperlink, an image will be rendered as ![[image.jpg]], note links are rendered as [[wikilinks]], etc.
+
+
+## Usage
+
+Export an Anytype space/page/collection as Any-Block v1 in JSON format.
+
+`cd` into the root of the exported folder.
+
+Run:
+
+```bash
+git clone https://github.com/kamryn404/anyMD
+python3 anyMD/convert.py
+```
+
+Output is written to `anyMD/output/` by default.
 
 ## What it does
 
@@ -11,7 +27,7 @@ Small Anytype Anyblock export to Obsidian markdown converter.
   - `types/`
   - `files/`
   - `filesObjects/`
-- Converts Anytype page objects into markdown files.
+- Converts Anytype page objects (Any-Block v1) into markdown files.
 - Builds YAML frontmatter from `config.yaml`.
 - Copies embedded attachments into the configured Obsidian attachments folder.
 - Preserves each generated markdown file's modified date from Anytype's system dates on Windows, macOS, and Linux.
@@ -38,11 +54,14 @@ attachments_folder: "attachments"
 attachment_link_style: "relative"
 exclude_types:
   - "Bookmark"
+# notes in collection "Books" would receive frontmatter "in: [[Books]]"
 collections:
-  - in: "[[$v]]"
+  - in: "[[$v]]" 
+# notes with Anytype cover_image "image.jpg" would recieve frontmatter "cover: [[image.jpg]]" 
 cover_image:
-  - cover: "[[$v]]"
+  - cover: "[[$v]]" 
 properties:
+  # notes with type "Journal Entry" would receive frontmatter "in: [[Journal Entry]]"
   Object type:
     - in: "[[$v]]"
   Date:
@@ -200,6 +219,7 @@ Journal Type:
 ```
 
 Quotes are optional for keys like this.
+<<<<<<< HEAD
 
 ## Setup
 
@@ -249,3 +269,5 @@ python -m unittest discover -v
 ```
 
 Timestamp regression tests use temporary exports and simulate platform/tool failures; they do not modify your exported notes.
+=======
+>>>>>>> refs/remotes/origin/main
